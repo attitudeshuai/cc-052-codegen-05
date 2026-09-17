@@ -36,6 +36,11 @@ POST /api/v1/batches                        创建种植批次
 POST /api/v1/batches/{id}/activities        农事记录（支持数组批量，client_uuid 幂等）
 POST /api/v1/batches/{id}/inspection        上传检测结果
 POST /api/v1/batches/{id}/codes             生成溯源码（返回数量与短码列表）
+POST /api/v1/batches/{id}/packing-plan      新建分级与装箱方案（一批一份，含分级明细）
+GET  /api/v1/batches/{id}/packing-plan      方案详情（各级整箱数/余量/合计对账）
+PUT  /api/v1/batches/{id}/packing-plan      整体替换方案（仅草稿状态可改）
+POST /api/v1/batches/{id}/packing-plan/confirm  确认方案（校验合计=总产量、余量已登记处理）
+PUT  /api/v1/batches/{id}/packing-plan/grades/{gradeId}/remainder  登记余量处理（办法+处理人，服务端记时间）
 GET  /api/v1/trace/{code}                   公开溯源查询（无需鉴权，限流）
 GET  /api/v1/trace/{code}/qrcode            返回二维码 PNG（带缓存头）
 ```
@@ -49,6 +54,9 @@ activity(id, batch_id, client_uuid UNIQUE, kind /* fertilize|pesticide|irrigatio
          input_id, dose, dose_unit, operator, photos jsonb, geo, created_at)
 input_material(id, name, type, registration_no, safe_interval_days, active_ingredient)
 inspection(id, batch_id, lab, sampled_at, result /* pass|fail */, report_url, items jsonb)
+packing_plan(id, batch_id UNIQUE, total_yield_kg, status /* draft|confirmed */, note, created_by)
+packing_plan_grade(id, plan_id, grade_name, size_spec /* 大小 */, quality_desc /* 品相 */, weight_kg,
+                   box_spec, kg_per_box, remainder_handling, remainder_handler, remainder_handled_at)
 trace_code(id, batch_id, code UNIQUE, seq, printed_at, first_scanned_at, first_scan_region)
 ```
 

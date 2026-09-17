@@ -16,6 +16,7 @@ func Setup(
 	activityH *handler.ActivityHandler,
 	inspectionH *handler.InspectionHandler,
 	traceCodeH *handler.TraceCodeHandler,
+	packingPlanH *handler.PackingPlanHandler,
 	healthH *handler.HealthHandler,
 	rdb *redis.Client,
 ) *gin.Engine {
@@ -48,6 +49,13 @@ func Setup(
 
 		// Inspections
 		v1.POST("/batches/:id/inspection", inspectionH.Create)
+
+		// Packing plan (分级与装箱方案)
+		v1.POST("/batches/:id/packing-plan", packingPlanH.Create)
+		v1.GET("/batches/:id/packing-plan", packingPlanH.GetByBatch)
+		v1.PUT("/batches/:id/packing-plan", packingPlanH.Replace)
+		v1.POST("/batches/:id/packing-plan/confirm", packingPlanH.Confirm)
+		v1.PUT("/batches/:id/packing-plan/grades/:gradeId/remainder", packingPlanH.RecordRemainder)
 
 		// Trace codes
 		v1.POST("/batches/:id/codes", traceCodeH.Generate)
