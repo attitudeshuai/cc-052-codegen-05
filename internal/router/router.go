@@ -16,6 +16,7 @@ func Setup(
 	activityH *handler.ActivityHandler,
 	inspectionH *handler.InspectionHandler,
 	traceCodeH *handler.TraceCodeHandler,
+	gradingH *handler.GradingHandler,
 	healthH *handler.HealthHandler,
 	rdb *redis.Client,
 ) *gin.Engine {
@@ -51,6 +52,17 @@ func Setup(
 
 		// Trace codes
 		v1.POST("/batches/:id/codes", traceCodeH.Generate)
+
+		// Grading & packing plan
+		v1.POST("/batches/:id/grading-plan", gradingH.Create)
+		v1.GET("/batches/:id/grading-plan", gradingH.GetByBatch)
+		v1.PUT("/batches/:id/grading-plan", gradingH.Update)
+		v1.POST("/batches/:id/grading-plan/confirm", gradingH.Confirm)
+		v1.POST("/grading-plans/:id/leftovers/:leftoverId/handle", gradingH.HandleLeftover)
+
+		// Pack specs
+		v1.GET("/pack-specs", gradingH.ListPackSpecs)
+		v1.POST("/pack-specs", gradingH.CreatePackSpec)
 	}
 
 	// Public trace endpoints with rate limiting

@@ -59,6 +59,8 @@ func main() {
 	codeRepo := repository.NewTraceCodeRepo(db)
 	inputMaterialRepo := repository.NewInputMaterialRepo(db)
 	_ = inputMaterialRepo
+	gradingRepo := repository.NewGradingRepo(db)
+	packSpecRepo := repository.NewPackSpecRepo(db)
 
 	// Services
 	farmSvc := service.NewFarmService(farmRepo)
@@ -67,6 +69,7 @@ func main() {
 	activitySvc := service.NewActivityService(activityRepo, batchRepo)
 	inspectionSvc := service.NewInspectionService(inspectionRepo, batchRepo)
 	traceCodeSvc := service.NewTraceCodeService(codeRepo, batchRepo, inspectionRepo, activityRepo, plotRepo, farmRepo)
+	gradingSvc := service.NewGradingService(gradingRepo, packSpecRepo, batchRepo)
 
 	// Handlers
 	farmH := handler.NewFarmHandler(farmSvc)
@@ -75,10 +78,11 @@ func main() {
 	activityH := handler.NewActivityHandler(activitySvc)
 	inspectionH := handler.NewInspectionHandler(inspectionSvc)
 	traceCodeH := handler.NewTraceCodeHandler(traceCodeSvc)
+	gradingH := handler.NewGradingHandler(gradingSvc)
 	healthH := handler.NewHealthHandler(db, rdb)
 
 	// Router
-	r := router.Setup(farmH, plotH, batchH, activityH, inspectionH, traceCodeH, healthH, rdb)
+	r := router.Setup(farmH, plotH, batchH, activityH, inspectionH, traceCodeH, gradingH, healthH, rdb)
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.ServerPort,

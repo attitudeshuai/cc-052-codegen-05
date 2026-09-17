@@ -38,6 +38,15 @@ POST /api/v1/batches/{id}/inspection        上传检测结果
 POST /api/v1/batches/{id}/codes             生成溯源码（返回数量与短码列表）
 GET  /api/v1/trace/{code}                   公开溯源查询（无需鉴权，限流）
 GET  /api/v1/trace/{code}/qrcode            返回二维码 PNG（带缓存头）
+
+# 分级与装箱方案
+POST /api/v1/batches/{id}/grading-plan          创建分级装箱方案（含级别明细，自动算箱数与余量）
+GET  /api/v1/batches/{id}/grading-plan          查询方案（箱数、余量、总量平衡校验结果）
+PUT  /api/v1/batches/{id}/grading-plan          整体更新级别明细（仅草稿状态）
+POST /api/v1/batches/{id}/grading-plan/confirm  确认方案（级别合计≠总产量时点名差异并拒绝）
+POST /api/v1/grading-plans/{id}/leftovers/{leftoverId}/handle  登记余量处理（处理人+时间留痕）
+GET  /api/v1/pack-specs                         包装规格列表
+POST /api/v1/pack-specs                         新增包装规格
 ```
 
 ## 7. 数据模型
@@ -50,7 +59,17 @@ activity(id, batch_id, client_uuid UNIQUE, kind /* fertilize|pesticide|irrigatio
 input_material(id, name, type, registration_no, safe_interval_days, active_ingredient)
 inspection(id, batch_id, lab, sampled_at, result /* pass|fail */, report_url, items jsonb)
 trace_code(id, batch_id, code UNIQUE, seq, printed_at, first_scanned_at, first_scan_region)
+pack_spec(id, name UNIQUE, capacity_kg /* 一箱装多少公斤 */, material)
+grading_plan(id, batch_id UNIQUE, total_yield_kg, status /* draft|confirmed|completed */, remark, created_by)
+grading_plan_grade(id, plan_id, grade_name, size_spec /* 大小标准 */, appearance /* 品相标准 */,
+                   yield_kg, pack_spec_id)
+grading_leftover(id, plan_id, grade_id, leftover_kg, action /* discount_sale|process|gift|waste|other */,
+                 handler, handled_at, note)
 ```
+
+**分级装箱规则**：箱数与余量按「克」整数计算（`整箱数 = 级别产量 ÷ 箱规容量`，余量单独生成
+`grading_leftover` 记录）；方案确认时校验 `Σ级别产量 = 总产量`，差额在 `balance_diff_kg` 中点名；
+余量处理必须登记处理人与处理时间，全部处理完方案自动 `completed`。
 
 ## 8. 关键实现点
 - **幂等补报**：`activity.client_uuid` 唯一索引 + `ON CONFLICT DO NOTHING`，离线重传不会产生重复记录。
